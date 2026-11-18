@@ -3,7 +3,7 @@ package contract
 import (
 	"math"
 
-	"github.com/canopy-name-service/canopy-name-service/cns"
+	"github.com/canopy-name-service/canopy-name-service/plugin/go/cns"
 )
 
 /*

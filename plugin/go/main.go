@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/canopy-name-service/canopy-name-service/contract"
+	"github.com/canopy-name-service/canopy-name-service/plugin/go/contract"
 	"os"
 	"os/signal"
 	"syscall"

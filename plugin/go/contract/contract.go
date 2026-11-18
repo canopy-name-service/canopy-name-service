@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/canopy-name-service/canopy-name-service/cns"
+	"github.com/canopy-name-service/canopy-name-service/plugin/go/cns"
 )
 
 /* This file contains the base contract implementation that overrides the basic 'transfer' functionality */

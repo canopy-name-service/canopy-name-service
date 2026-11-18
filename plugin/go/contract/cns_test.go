@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/canopy-name-service/canopy-name-service/cns"
+	"github.com/canopy-name-service/canopy-name-service/plugin/go/cns"
 )
 
 // fakeState is an in-memory stateBackend used to unit-test the CNS Deliver handlers without a node.

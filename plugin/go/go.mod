@@ -1,4 +1,4 @@
-module github.com/canopy-network/go-plugin
+module github.com/canopy-name-service/canopy-name-service
 
 go 1.26
 

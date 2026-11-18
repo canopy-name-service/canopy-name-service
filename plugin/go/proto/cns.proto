@@ -1,0 +1,71 @@
+syntax = "proto3";
+package types;
+// NOTE: this lives in its OWN proto file (cns.proto) and its OWN go package (cns) — separate from the
+// core tx.proto/account.proto. It keeps proto package `types` (so transaction type URLs remain
+// `type.googleapis.com/types.MessageRegisterName`) but defines ONLY CNS-specific messages. Because
+// these message names (and the file path) do not collide with the canopy core `types` messages, this
+// package can be imported alongside the canopy module in a single binary (e.g. the name-solver)
+// without a duplicate protobuf registration panic.
+option go_package = "github.com/canopy-name-service/canopy-name-service/cns";
+
+// CNS (Canopy Name Service) transactions and records
+//
+// A name (e.g. "pablocampogo.cnpy") maps to exactly one target address. An address may own many
+// names. The signer that registers a name is its owner; only the owner may update or delete it.
+// The target address may differ from the owner.
+
+// MessageRegisterName registers a new human-readable name pointing to a target address
+message MessageRegisterName {
+  // name: the human-readable name including the .cnpy suffix (normalized to lowercase before storage)
+  string name = 1;
+  // owner: the address that owns the name and must sign this transaction (20 bytes)
+  bytes owner = 2;
+  // address: the target address the name resolves to (20 bytes); may differ from the owner
+  bytes address = 3;
+}
+
+// MessageUpdateName changes the target address a name resolves to; only the owner may call it
+message MessageUpdateName {
+  // name: the existing human-readable name to update (normalized to lowercase)
+  string name = 1;
+  // owner: the current owner/signer of the name (20 bytes)
+  bytes owner = 2;
+  // new_address: the new target address the name should resolve to (20 bytes)
+  bytes new_address = 3; // @gotags: json:"newAddress"
+}
+
+// MessageDeleteName removes a name and its reverse-index entries; only the owner may call it
+message MessageDeleteName {
+  // name: the existing human-readable name to delete (normalized to lowercase)
+  string name = 1;
+  // owner: the current owner/signer of the name (20 bytes)
+  bytes owner = 2;
+}
+
+// MessageFaucet is a DEV/TEST-ONLY transaction that mints unbacked tokens to the signer's account so
+// fresh test accounts can pay transaction fees. It is self-authorized (signer == address). DO NOT
+// enable in production: anyone could mint arbitrary balance.
+message MessageFaucet {
+  // address: the account to credit, which must also be the transaction signer (20 bytes)
+  bytes address = 1;
+  // amount: the amount of tokens to mint (in micro-denomination, uCNPY)
+  uint64 amount = 2;
+}
+
+// NameRecord is the primary CNS record, stored keyed by the normalized name
+message NameRecord {
+  // name: the normalized (lowercase) human-readable name
+  string name = 1;
+  // owner: the address that owns the name (20 bytes)
+  bytes owner = 2;
+  // address: the target address the name resolves to (20 bytes)
+  bytes address = 3;
+}
+
+// NameSet is the per-address commitment of all names owned-by-target for an address. It is stored
+// keyed by address and provides a single committed value whose membership proof guarantees the
+// completeness of a 'names by address' result (a node cannot silently drop a name from the list).
+message NameSet {
+  // names: the sorted, de-duplicated list of normalized names resolving to the address
+  repeated string names = 1;
+}

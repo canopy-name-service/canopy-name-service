@@ -78,3 +78,22 @@ func ErrTxFeeBelowStateLimit() *PluginError {
 func ErrInvalidPluginConfig(reason string) *PluginError {
 	return NewError(15, DefaultModule, fmt.Sprintf("pluginConfig is not in the expected form: %s", reason))
 }
+
+// CNS (Canopy Name Service) errors. Codes start at 16 so they sit above the existing plugin errors
+// (ErrInvalidPluginConfig is 15) and never collide with them.
+
+func ErrNameExists() *PluginError {
+	return NewError(16, DefaultModule, "the name is already registered")
+}
+
+func ErrNameNotFound() *PluginError {
+	return NewError(17, DefaultModule, "the name does not exist")
+}
+
+func ErrNotNameOwner() *PluginError {
+	return NewError(18, DefaultModule, "the signer is not the owner of the name")
+}
+
+func ErrInvalidName() *PluginError {
+	return NewError(19, DefaultModule, "the name is invalid")
+}

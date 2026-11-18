@@ -11,20 +11,30 @@ import (
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/anypb"
+
+	"github.com/canopy-name-service/canopy-name-service/cns"
 )
 
 /* This file contains the base contract implementation that overrides the basic 'transfer' functionality */
 
 // PluginConfig: the configuration of the contract
 var ContractConfig = &PluginConfig{
-	Name:                  "go_plugin_contract",
-	Id:                    1,
-	Version:               1,
-	SupportedTransactions: []string{"send"},
+	Name:    "go_plugin_contract",
+	Id:      1,
+	Version: 1,
+	// base 'send' plus the additive Canopy Name Service (CNS) transactions and the dev-only faucet
+	SupportedTransactions: []string{"send", "registerName", "updateName", "deleteName", "faucet"},
 	TransactionTypeUrls: []string{
 		"type.googleapis.com/types.MessageSend",
+		"type.googleapis.com/types.MessageRegisterName",
+		"type.googleapis.com/types.MessageUpdateName",
+		"type.googleapis.com/types.MessageDeleteName",
+		"type.googleapis.com/types.MessageFaucet",
 	},
-	EventTypeUrls: nil,
+	// CustomStatePrefixes declares the plugin-owned key prefixes for CNS records. Canopy panics at
+	// handshake if any collides with a core-reserved prefix (1-15), so these live well above it.
+	CustomStatePrefixes: [][]byte{cns.NamePrefix(), cns.ReversePrefix(), cns.SetPrefix()},
+	EventTypeUrls:       nil,
 }
 
 // init sets FileDescriptorProtos after ensuring .pb.go files are initialized
@@ -36,10 +46,12 @@ func init() {
 	file_tx_proto_init()
 
 	var fds [][]byte
-	// Include google/protobuf/any.proto first as it's a dependency of event.proto and tx.proto
+	// Include google/protobuf/any.proto first as it's a dependency of event.proto and tx.proto.
+	// cns.File_cns_proto is included so the FSM learns the additive CNS message types at handshake
+	// (the CNS messages live in the standalone `cns` package but still in proto package `types`).
 	for _, file := range []protoreflect.FileDescriptor{
 		anypb.File_google_protobuf_any_proto,
-		File_account_proto, File_event_proto, File_plugin_proto, File_tx_proto,
+		File_account_proto, File_event_proto, File_plugin_proto, File_tx_proto, cns.File_cns_proto,
 	} {
 		fd, _ := proto.Marshal(protodesc.ToFileDescriptorProto(file))
 		fds = append(fds, fd)
@@ -51,8 +63,16 @@ func init() {
 type Contract struct {
 	Config    Config
 	FSMConfig *PluginFSMConfig // fsm configuration
-	plugin    *Plugin          // plugin connection
+	plugin    stateBackend     // plugin connection (interface for testability; *Plugin in production)
 	fsmId     uint64           // the id of the requesting fsm
+}
+
+// stateBackend abstracts the plugin's state read/write operations against the FSM so that
+// contract logic (the Deliver* handlers) can be unit-tested with an in-memory fake without a
+// running node. The production implementation is *Plugin (see plugin.go).
+type stateBackend interface {
+	StateRead(c *Contract, request *PluginStateReadRequest) (*PluginStateReadResponse, *PluginError)
+	StateWrite(c *Contract, request *PluginStateWriteRequest) (*PluginStateWriteResponse, *PluginError)
 }
 
 // Genesis() implements logic to import a json file to create the state at height 0 and export the state at any height
@@ -97,6 +117,14 @@ func (c *Contract) CheckTx(request *PluginCheckRequest) *PluginCheckResponse {
 	switch x := msg.(type) {
 	case *MessageSend:
 		return c.CheckMessageSend(x)
+	case *cns.MessageRegisterName:
+		return c.CheckMessageRegisterName(x)
+	case *cns.MessageUpdateName:
+		return c.CheckMessageUpdateName(x)
+	case *cns.MessageDeleteName:
+		return c.CheckMessageDeleteName(x)
+	case *cns.MessageFaucet:
+		return c.CheckMessageFaucet(x)
 	default:
 		return &PluginCheckResponse{Error: ErrInvalidMessageCast()}
 	}
@@ -113,6 +141,14 @@ func (c *Contract) DeliverTx(request *PluginDeliverRequest) *PluginDeliverRespon
 	switch x := msg.(type) {
 	case *MessageSend:
 		return c.DeliverMessageSend(x, request.Tx.Fee, request.Tx.Memo)
+	case *cns.MessageRegisterName:
+		return c.DeliverMessageRegisterName(x, request.Tx.Fee)
+	case *cns.MessageUpdateName:
+		return c.DeliverMessageUpdateName(x, request.Tx.Fee)
+	case *cns.MessageDeleteName:
+		return c.DeliverMessageDeleteName(x, request.Tx.Fee)
+	case *cns.MessageFaucet:
+		return c.DeliverMessageFaucet(x, request.Tx.Fee)
 	default:
 		return &PluginDeliverResponse{Error: ErrInvalidMessageCast()}
 	}

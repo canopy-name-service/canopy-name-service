@@ -155,7 +155,7 @@ const file_account_proto_rawDesc = "" +
 	"\x05nonce\x18\a \x01(\x04R\x05nonce\".\n" +
 	"\x04Pool\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x16\n" +
-	"\x06amount\x18\x02 \x01(\x04R\x06amountB.Z,github.com/canopy-network/go-plugin/contractb\x06proto3"
+	"\x06amount\x18\x02 \x01(\x04R\x06amountB=Z;github.com/canopy-name-service/canopy-name-service/contractb\x06proto3"
 
 var (
 	file_account_proto_rawDescOnce sync.Once

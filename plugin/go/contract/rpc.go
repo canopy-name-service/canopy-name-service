@@ -38,8 +38,13 @@ func (p *Plugin) StartRPCServer() {
 	//   })
 	//
 	mux := http.NewServeMux()
+	// register the CNS (Canopy Name Service) read-only query endpoints:
+	//   GET /v1/query/cns/resolve?name=<name>&height=<height>
+	//   GET /v1/query/cns/names-by-address?address=<hex>&height=<height>
+	// each response embeds a merkle proof fetched over the plugin<->FSM socket (detached query, prove=true)
+	p.RegisterCNSRoutes(mux)
 	// log the build marker so the running version is obvious in the log
-	log.Printf("plugin RPC server (%s) listening on %s (no custom routes registered)", PluginBuild, addr)
+	log.Printf("plugin RPC server (%s) listening on %s (CNS routes registered)", PluginBuild, addr)
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Printf("plugin RPC server error: %v", err)
 	}

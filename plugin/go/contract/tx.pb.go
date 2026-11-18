@@ -345,7 +345,7 @@ const file_tx_proto_rawDesc = "" +
 	"\tSignature\x12\x1d\n" +
 	"\n" +
 	"public_key\x18\x01 \x01(\fR\tpublicKey\x12\x1c\n" +
-	"\tsignature\x18\x02 \x01(\fR\tsignatureB.Z,github.com/canopy-network/go-plugin/contractb\x06proto3"
+	"\tsignature\x18\x02 \x01(\fR\tsignatureB=Z;github.com/canopy-name-service/canopy-name-service/contractb\x06proto3"
 
 var (
 	file_tx_proto_rawDescOnce sync.Once
